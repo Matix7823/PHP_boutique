@@ -1,33 +1,46 @@
 <?php
 /**
- * Page de gestion des utilisateurs (Back-office)
- * Permet de visualiser la liste et de supprimer des comptes.
+ * Page de gestion des utilisateurs (Back-office) - Domaine Prestige
+ * Permet à l'administrateur de visualiser la liste des inscrits et de supprimer des comptes.
  */
+
 require_once '../config/db.php';
 require_once '../includes/functions.php';
 
-// Vérification de l'authentification admin [cite: 26, 27]
+/**
+ * SECURITÉ : Contrôle d'accès
+ * On vérifie que la personne connectée a bien le rôle 'admin'.
+ */
 if (!isAdmin()) { 
     redirect('../login.php'); 
 }
 
-// --- LOGIQUE DE SUPPRESSION --- [cite: 35]
+/**
+ * LOGIQUE DE SUPPRESSION (D du CRUD)
+ * S'exécute lorsqu'un formulaire de suppression est soumis.
+ */
 if (isPost() && post('action') === 'delete') {
     $id_to_delete = (int)post('id');
     $current_admin_id = $_SESSION['user']['id'];
 
-    // Sécurité : Empêcher un admin de supprimer son propre compte
+    // SECURITÉ CRUCIALE : Empêcher un admin de supprimer son propre compte par erreur
+    // Cela évite de se retrouver bloqué sans accès au back-office.
     if ($id_to_delete !== $current_admin_id) {
         $stmt = $pdo->prepare("DELETE FROM users WHERE id = ?");
         $stmt->execute([$id_to_delete]);
-        setFlash('success', 'Utilisateur supprimé avec succès.');
+        setFlash('success', 'L\'utilisateur a été supprimé avec succès.');
     } else {
-        setFlash('error', 'Vous ne pouvez pas supprimer votre propre compte.');
+        setFlash('danger', 'Sécurité : Vous ne pouvez pas supprimer votre propre compte administrateur.');
     }
+    
+    // Redirection pour rafraîchir la liste et éviter de renvoyer le formulaire
     redirect('users.php');
 }
 
-// Récupération de la liste des utilisateurs [cite: 34]
+/**
+ * RÉCUPÉRATION DES DONNÉES (R du CRUD)
+ * On récupère les informations essentielles des utilisateurs triées par date.
+ */
 $users = $pdo->query("SELECT id, nom, email, role, created_at FROM users ORDER BY created_at DESC")->fetchAll();
 
 require_once '../includes/header.php';
@@ -35,7 +48,7 @@ require_once '../includes/header.php';
 
 <div class="container py-5">
     <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2 class="text-white font-serif"><i class="fas fa-users me-2"></i>Gestion des Utilisateurs</h2>
+        <h2 class="text-white font-serif"><i class="fas fa-users me-2" style="color: #c9a961;"></i>Gestion des Utilisateurs</h2>
         <a href="index.php" class="btn btn-outline-light btn-sm">Retour Dashboard</a>
     </div>
 
@@ -63,9 +76,10 @@ require_once '../includes/header.php';
                         </span>
                     </td>
                     <td><?= formatDate($u['created_at']) ?></td>
+                    
                     <td class="text-center">
                         <?php if($u['id'] != $_SESSION['user']['id']): ?>
-                            <form action="users.php" method="POST" onsubmit="return confirm('Confirmer la suppression définitive ?')">
+                            <form action="users.php" method="POST" onsubmit="return confirm('Attention : Confirmer la suppression définitive de cet utilisateur ?')">
                                 <input type="hidden" name="id" value="<?= $u['id'] ?>">
                                 <input type="hidden" name="action" value="delete">
                                 <input type="hidden" name="csrf_token" value="<?= generateCsrfToken() ?>">
@@ -74,7 +88,7 @@ require_once '../includes/header.php';
                                 </button>
                             </form>
                         <?php else: ?>
-                            <span class="badge bg-secondary">Moi (Admin)</span>
+                            <span class="badge bg-secondary">Moi (Connecté)</span>
                         <?php endif; ?>
                     </td>
                 </tr>
@@ -84,4 +98,7 @@ require_once '../includes/header.php';
     </div>
 </div>
 
-<?php require_once '../includes/footer.php'; ?>
+<?php 
+// Inclusion du pied de page
+require_once '../includes/footer.php'; 
+?>

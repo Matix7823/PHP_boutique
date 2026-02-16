@@ -1,12 +1,13 @@
 <?php
 /**
  * Gestion du catalogue (Back-office) - Domaine Prestige
- * Permet l'affichage, l'ajout et la suppression des produits (CRUD complet).
+ * Ce fichier permet de Lister (Read), Ajouter (Create) et Supprimer (Delete) les produits.
  */
 require_once '../config/db.php';
 require_once '../includes/functions.php';
 
-// Vérification stricte des droits d'accès admin
+// SECURITÉ : Vérification du rôle administrateur. 
+// Empêche un client classique d'accéder à la gestion des stocks via l'URL.
 if (!isAdmin()) { 
     redirect('../login.php'); 
 }
@@ -15,14 +16,16 @@ $success = "";
 $error = "";
 
 /**
- * LOGIQUE D'AJOUT
+ * LOGIQUE D'AJOUT (CREATE du CRUD)
  */
 if (isPost() && isset($_POST['add'])) {
-    // Vérification du token CSRF pour la sécurité
+    // SECURITÉ CSRF : Vérifie que le formulaire provient bien de notre site
     if (!verifyCsrfToken(post('csrf_token'))) {
         $error = "Erreur de sécurité : Jeton invalide.";
     } else {
         try {
+            // TRANSACTION : On utilise une transaction car on écrit dans DEUX tables (items et stock)
+            // Si l'insertion du stock échoue, l'article n'est pas créé non plus.
             $pdo->beginTransaction();
 
             $sql_item = "INSERT INTO items (
@@ -39,17 +42,20 @@ if (isPost() && isset($_POST['add'])) {
                 post('garde'), post('elevage')
             ]);
 
+            // Récupération de l'ID auto-incrémenté qui vient d'être généré
             $last_id = $pdo->lastInsertId();
 
-            // Gestion de la table stock obligatoire
+            // INSERTION DANS LA TABLE STOCK (Relation 1:1 avec items)
             $sql_stock = "INSERT INTO stock (id_item, quantite_stock) VALUES (?, ?)";
             $stmt_stock = $pdo->prepare($sql_stock);
             $stmt_stock->execute([$last_id, (int)post('quantite', 0)]);
 
+            // Validation définitive des deux insertions
             $pdo->commit();
             setFlash('success', "Le nouveau cru a été ajouté au catalogue.");
             redirect('items.php');
         } catch (Exception $e) {
+            // En cas d'erreur, on annule tout (Rollback)
             $pdo->rollBack();
             $error = "Erreur système : " . $e->getMessage();
         }
@@ -57,31 +63,36 @@ if (isPost() && isset($_POST['add'])) {
 }
 
 /**
- * LOGIQUE DE SUPPRESSION
+ * LOGIQUE DE SUPPRESSION (DELETE du CRUD)
  */
 if (isPost() && isset($_POST['delete'])) {
     if (!verifyCsrfToken(post('csrf_token'))) {
         setFlash('error', "Erreur de sécurité : Jeton invalide.");
     } else {
         $id = (int)post('id');
+        // Note : En base de données, une contrainte ON DELETE CASCADE sur la table stock 
+        // permet de supprimer automatiquement le stock lié quand l'item disparait.
         $pdo->prepare("DELETE FROM items WHERE id = ?")->execute([$id]);
         setFlash('success', "La référence a été retirée du catalogue.");
     }
     redirect('items.php');
 }
 
-// Récupération des articles avec détails et stock (Read)
+/**
+ * RÉCUPÉRATION DES DONNÉES (READ du CRUD)
+ * On récupère tous les vins avec leur stock actuel via une JOINTURE (LEFT JOIN)
+ */
 $items = $pdo->query("SELECT i.*, s.quantite_stock FROM items i LEFT JOIN stock s ON i.id = s.id_item ORDER BY i.id DESC")->fetchAll();
 
 require_once '../includes/header.php'; 
 ?>
 
 <style>
+    /* Design spécifique au Back-office : Sombre, contrasté et doré */
     :root { --gold-smooth: #c9a961; --dark-luxury: #0a0a0a; }
     body { background-color: #050505; color: #ffffff; }
     .luxury-card { background: #0f0f0f; border: 1px solid #333; border-radius: 0; }
     
-    /* Labels et Titres Or brillant */
     label, .accordion-button { 
         color: var(--gold-smooth) !important; 
         font-weight: 700 !important; 
@@ -89,7 +100,6 @@ require_once '../includes/header.php';
         font-size: 0.85rem;
     }
     
-    /* Inputs Blanc sur Noir (Pas de texte gris) */
     .form-control, .form-select { 
         background: #000 !important; 
         border: 1px solid #444 !important; 
@@ -99,12 +109,14 @@ require_once '../includes/header.php';
     }
     .form-control:focus { border-color: var(--gold-smooth) !important; box-shadow: none; }
 
-    /* Tableau Haute Visibilité */
+    /* Style du tableau pour une lisibilité maximale des stocks */
     .table { color: #ffffff !important; border-color: #333; }
     .table thead { background: #1a1a1a; color: var(--gold-smooth) !important; text-transform: uppercase; }
     
     .btn-gold { background: var(--gold-smooth); color: #000; border: none; font-weight: 700; border-radius: 0; }
     .btn-gold:hover { background: #ffffff; color: #000; }
+    
+    .wine-img-container { width: 50px; height: 50px; background: #fff; display: flex; align-items: center; justify-content: center; }
 </style>
 
 <div class="container py-5">
@@ -171,7 +183,7 @@ require_once '../includes/header.php';
                             <td class="ps-4 py-4">
                                 <div class="d-flex align-items-center">
                                     <div class="wine-img-container me-3">
-                                        <img src="<?= e($item['image']) ?>" style="max-height: 100%; max-width: 100%; object-fit: contain;">
+                                        <img src="<?= e($item['image']) ?>" alt="" style="max-height: 100%; max-width: 100%;">
                                     </div>
                                     <div>
                                         <div class="fw-bold text-white"><?= e($item['nom']) ?></div>
@@ -188,7 +200,8 @@ require_once '../includes/header.php';
                             <td class="text-end pe-4">
                                 <div class="btn-group gap-2">
                                     <a href="edit_item.php?id=<?= $item['id'] ?>" class="btn btn-sm btn-outline-warning fw-bold">MODIFIER</a>
-                                    <form method="POST" onsubmit="return confirm('Retirer définitivement ?');" class="d-inline">
+                                    
+                                    <form method="POST" onsubmit="return confirm('Retirer définitivement cette référence ?');" class="d-inline">
                                         <input type="hidden" name="id" value="<?= $item['id'] ?>">
                                         <input type="hidden" name="csrf_token" value="<?= generateCsrfToken() ?>">
                                         <button type="submit" name="delete" class="btn btn-sm btn-outline-danger fw-bold">RETIRER</button>

@@ -1,6 +1,15 @@
+<?php
+/**
+ * Footer Global - Domaine Prestige
+ * Ce fichier clôture la structure HTML, affiche les informations de contact, 
+ * les horaires et gère la navigation secondaire.
+ */
+?>
+
 <footer style="background-color: #050505; border-top: 1px solid #222; padding-top: 4rem; margin-top: auto;">
     <div class="container pb-4">
         <div class="row g-4">
+            
             <div class="col-lg-4 col-md-6">
                 <h5 class="text-white text-uppercase letter-spacing-2 mb-3" style="font-family: 'Cormorant Garamond', serif;">Domaine Prestige</h5>
                 <p style="color: #b0b0b0; line-height: 1.6;">
@@ -19,15 +28,15 @@
                 <ul class="list-unstyled">
                     <li class="d-flex justify-content-between mb-2" style="border-bottom: 1px solid #222; padding-bottom: 5px;">
                         <span style="color: #ccc;">Lundi - Jeudi</span>
-                        <span style="color: var(--gold);">10h - 18h</span>
+                        <span style="color: #c9a961;">10h - 18h</span>
                     </li>
                     <li class="d-flex justify-content-between mb-2" style="border-bottom: 1px solid #222; padding-bottom: 5px;">
                         <span style="color: #ccc;">Vendredi</span>
-                        <span style="color: var(--gold);">10h - 20h</span>
+                        <span style="color: #c9a961;">10h - 20h</span>
                     </li>
                     <li class="d-flex justify-content-between mb-2" style="border-bottom: 1px solid #222; padding-bottom: 5px;">
                         <span style="color: #ccc;">Samedi</span>
-                        <span style="color: var(--gold);">09h - 19h</span>
+                        <span style="color: #c9a961;">09h - 19h</span>
                     </li>
                     <li class="d-flex justify-content-between">
                         <span style="color: #666;">Dimanche</span>
@@ -42,6 +51,7 @@
                     <li class="mb-2"><a href="index.php" style="color: #b0b0b0; text-decoration: none;">Accueil</a></li>
                     <li class="mb-2"><a href="articles.php" style="color: #b0b0b0; text-decoration: none;">Nos Vins</a></li>
                     <li class="mb-2"><a href="qui-sommes-nous.php" style="color: #b0b0b0; text-decoration: none;">Le Domaine</a></li>
+                    
                     <?php if (isset($_SESSION['user'])): ?>
                         <li class="mb-2"><a href="logout.php" style="color: #b0b0b0; text-decoration: none;">Déconnexion</a></li>
                     <?php else: ?>
@@ -54,15 +64,15 @@
                 <h5 class="text-white text-uppercase letter-spacing-2 mb-3" style="font-family: 'Cormorant Garamond', serif;">Contact</h5>
                 <ul class="list-unstyled" style="color: #b0b0b0;">
                     <li class="mb-3 d-flex">
-                        <i class="fas fa-map-marker-alt mt-1 me-3" style="color: var(--gold);"></i>
+                        <i class="fas fa-map-marker-alt mt-1 me-3" style="color: #c9a961;"></i>
                         <span>Route des Grands Crus<br>33000 Bordeaux</span>
                     </li>
                     <li class="mb-3 d-flex">
-                        <i class="fas fa-phone mt-1 me-3" style="color: var(--gold);"></i>
+                        <i class="fas fa-phone mt-1 me-3" style="color: #c9a961;"></i>
                         <a href="tel:+33556000000" style="color: #b0b0b0; text-decoration: none;">05 56 00 00 00</a>
                     </li>
                     <li class="mb-3 d-flex">
-                        <i class="fas fa-envelope mt-1 me-3" style="color: var(--gold);"></i>
+                        <i class="fas fa-envelope mt-1 me-3" style="color: #c9a961;"></i>
                         <a href="mailto:contact@domaineprestige.fr" style="color: #b0b0b0; text-decoration: none;">contact@domaine.fr</a>
                     </li>
                 </ul>

@@ -1,12 +1,22 @@
 <?php
+/**
+ * Page de Détail Produit - Domaine Prestige
+ * Affiche les informations complètes d'un vin et suggère des produits similaires.
+ */
 require_once 'config/db.php';
 require_once 'includes/functions.php';
 
-// 1. Récupération et validation de l'ID
+// 1. RÉCUPÉRATION ET VALIDATION DE L'ID
+// On convertit l'ID reçu en URL en entier (int) pour la sécurité.
 $id = (int)get('id', 0);
-if ($id <= 0) { header('Location: articles.php'); exit; }
+if ($id <= 0) { 
+    header('Location: articles.php'); 
+    exit; 
+}
 
-// 2. Requête détaillée avec jointure de stock
+// 2. REQUÊTE DÉTAILLÉE AVEC JOINTURE
+// On utilise LEFT JOIN pour lier les tables 'items' et 'stock'.
+// COALESCE permet de retourner 0 si la valeur de stock est nulle.
 $sql = "SELECT i.*, COALESCE(s.quantite_stock, 0) as stock 
         FROM items i 
         LEFT JOIN stock s ON i.id = s.id_item 
@@ -15,11 +25,17 @@ $stmt = $pdo->prepare($sql);
 $stmt->execute([':id' => $id]);
 $wine = $stmt->fetch();
 
-if (!$wine) { header('Location: articles.php'); exit; }
+// Sécurité : Si l'ID ne correspond à aucun vin en base, on redirige.
+if (!$wine) { 
+    header('Location: articles.php'); 
+    exit; 
+}
 
 $page_title = $wine['nom'];
 
-// 3. Récupération des suggestions (même type de vin)
+// 3. LOGIQUE DE SUGGESTIONS (Cross-selling)
+// On récupère 4 vins aléatoires (RAND) du même type (Rouge, Blanc, etc.) 
+// en excluant le vin actuellement affiché.
 $sql_sim = "SELECT i.*, COALESCE(s.quantite_stock, 0) as stock 
             FROM items i 
             LEFT JOIN stock s ON i.id = s.id_item 

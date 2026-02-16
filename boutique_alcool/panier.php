@@ -1,17 +1,25 @@
 <?php
+/**
+ * Page Mon Panier - Domaine Prestige
+ * Gère l'affichage, la modification des quantités et la suppression des articles.
+ */
 require_once 'config/db.php';
 require_once 'includes/functions.php';
 
-// Assurer que le panier est initialisé dès le début
+// On s'assure que la structure du panier existe en session dès le chargement.
 initPanier();
 
 $page_title = 'Mon Panier';
 
-// --- LOGIQUE PHP : TRAITEMENT DES ACTIONS ---
+/**
+ * LOGIQUE PHP : TRAITEMENT DES ACTIONS (POST)
+ * Cette section intercepte les modifications demandées par l'utilisateur.
+ */
 if (isPost()) {
     $csrf_token = post('csrf_token');
     
-    // Vérification stricte du Token CSRF
+    // SÉCURITÉ CSRF : On vérifie que la requête vient bien de notre site 
+    // et non d'une tentative de fraude externe (Cross-Site Request Forgery).
     if (!verifyCsrfToken($csrf_token)) {
         setFlash('danger', 'Token de sécurité invalide. Veuillez réessayer.');
         header('Location: panier.php'); 
@@ -21,40 +29,52 @@ if (isPost()) {
     $action = post('action');
     $id = (int)post('id', 0);
 
+    // Traitement selon le bouton cliqué
     switch ($action) {
         case 'add':
+            // Ajout ou incrémentation d'une bouteille
             $quantity = max(1, (int)post('quantity', 1));
             addToPanier($id, $quantity);
             setFlash('success', 'Article ajouté avec succès à votre cave.');
             break;
             
         case 'update':
+            // Mise à jour manuelle de la quantité (ex: via l'input chiffre)
             $quantity = max(0, (int)post('quantity', 1));
             updatePanierQuantity($id, $quantity);
             setFlash('success', 'Quantité mise à jour.');
             break;
             
         case 'remove':
+            // Suppression d'une ligne spécifique
             removeFromPanier($id);
             setFlash('success', 'Article retiré du panier.');
             break;
             
         case 'clear':
+            // Vidage complet du panier
             clearPanier();
             setFlash('success', 'Votre panier a été entièrement vidé.');
             break;
     }
     
-    // Redirection propre après traitement pour éviter le renvoi de formulaire au rafraîchissement
+    // POST-REDIRECT-GET : On redirige pour éviter que l'utilisateur 
+    // ne renvoie le formulaire en rafraîchissant la page (F5).
     header('Location: panier.php');
     exit;
 }
 
-// Récupération des données pour l'affichage
+/**
+ * RÉCUPÉRATION DES DONNÉES
+ * getPanierItems() fait la liaison entre les IDs en session et les infos réelles en BDD.
+ */
 $panier_items = getPanierItems($pdo);
 $total = getPanierTotal($pdo);
 
-// Calcul des frais (Exemple : Offerts dès 150€)
+/**
+ * CALCUL DES FRAIS DE LIVRAISON
+ * Logique commerciale : Offerts si le panier dépasse 150€ ou s'il est vide.
+ */
 $frais_livraison = ($total > 150 || $total == 0) ? 0 : 15.00;
 $total_final = $total + $frais_livraison;
 
@@ -177,7 +197,7 @@ require_once 'includes/header.php';
                         </div>
                         
                         <div class="d-grid gap-2">
-                            <a href="checkout.php" class="btn btn-gold py-3 text-uppercase fw-bold" style="background: #c9a961; color:#000; border:none; border-radius:0;">
+                            <a href="checkout.php" class="btn py-3 text-uppercase fw-bold" style="background: #c9a961; color:#000; border-radius:0;">
                                 Commander <i class="fas fa-arrow-right ms-2"></i>
                             </a>
                             <a href="articles.php" class="btn btn-outline-light py-2 text-uppercase small" style="border-radius:0;">

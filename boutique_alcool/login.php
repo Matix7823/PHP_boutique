@@ -1,14 +1,16 @@
 <?php
 /**
  * Page de Connexion - Domaine Prestige
- * Gère l'accès sécurisé des membres et administrateurs.
+ * Gère l'accès sécurisé des membres et des administrateurs au site.
  */
 require_once 'config/db.php';
 require_once 'includes/functions.php';
 
 $page_title = 'Connexion';
 
-// 1. Redirection automatique si déjà connecté
+// 1. REDIRECTION INTELLIGENTE
+// Si l'utilisateur est déjà connecté, on lui évite de revoir le formulaire.
+// On le renvoie vers l'admin s'il est gestionnaire, sinon vers l'accueil.
 if (isLogged()) {
     isAdmin() ? header('Location: admin/index.php') : header('Location: index.php');
     exit;
@@ -16,26 +18,37 @@ if (isLogged()) {
 
 $error = null;
 
+/**
+ * TRAITEMENT DE LA CONNEXION
+ * S'exécute lors de la soumission du formulaire via POST.
+ */
 if (isPost()) {
-    // On récupère l'email avec post() qui applique clean()
-    // On ajoute un trim supplémentaire par précaution
+    // Récupération et nettoyage des données entrantes.
+    // L'email est "nettoyé" via clean() mais le mot de passe est gardé intact pour ne pas casser les caractères spéciaux.
     $email = trim(post('email')); 
     $password = $_POST['password']; 
     
     if (!empty($email) && !empty($password)) {
-        // 2. Recherche de l'utilisateur
+        
+        // 2. RECHERCHE DE L'UTILISATEUR (SQL Préparé)
+        // On cherche une ligne correspondante à l'email fourni.
         $stmt = $pdo->prepare("SELECT * FROM users WHERE email = ?");
         $stmt->execute([$email]);
         $user = $stmt->fetch();
         
-        // 3. Vérification du mot de passe
+        // 3. VÉRIFICATION DU MOT DE PASSE HACHÉ
+        // Utilisation de password_verify() qui compare le texte clair avec le hash stocké.
+        // C'est une sécurité majeure : même en cas de vol de BDD, les MDP sont illisibles.
         if ($user && password_verify($password, $user['password'])) {
-            // Initialisation de la session complète
+            
+            // 4. INITIALISATION DE LA SESSION
+            // On stocke les informations de l'utilisateur dans $_SESSION pour qu'il soit reconnu sur tout le site.
             $_SESSION['user'] = $user;
             
+            // Message de bienvenue temporaire via le système Flash
             setFlash('success', "Heureux de vous revoir, " . e($user['nom']));
             
-            // Redirection intelligente
+            // Redirection selon le rôle (Admin vers Back-office, Client vers Front-office)
             if ($user['role'] === 'admin') {
                 header('Location: admin/index.php');
             } else {
@@ -43,6 +56,7 @@ if (isPost()) {
             }
             exit;
         } else {
+            // Erreur générique volontaire pour ne pas aider un pirate à savoir si l'email existe.
             $error = "Identifiants incorrects ou compte inexistant.";
         }
     } else {
@@ -54,6 +68,7 @@ require_once 'includes/header.php';
 ?>
 
 <style>
+    /* Design luxueux avec superposition de dégradé sur une image de cave */
     .login-container {
         background: linear-gradient(rgba(0,0,0,0.7), rgba(0,0,0,0.8)), url('https://images.unsplash.com/photo-1516594915697-87eb3b1c14ea?w=1920') center/cover;
         min-height: 85vh;
@@ -81,18 +96,10 @@ require_once 'includes/header.php';
     label {
         color: #c9a961 !important;
         font-weight: 700;
+        text-transform: uppercase;
         letter-spacing: 1px;
-        cursor: pointer;
     }
-    .text-white-fixed {
-        color: #ffffff !important;
-        opacity: 1 !important;
-    }
-    .btn-gold:hover {
-        background-color: #ffffff !important;
-        color: #000 !important;
-        transition: 0.3s;
-    }
+    .text-white-fixed { color: #ffffff !important; opacity: 1 !important; }
 </style>
 
 <div class="login-container">
@@ -115,17 +122,17 @@ require_once 'includes/header.php';
 
                     <form method="POST">
                         <div class="mb-3">
-                            <label for="email" class="small text-uppercase mb-1">Adresse Email</label>
-                            <input type="email" id="email" name="email" class="form-control" value="<?= isset($_POST['email']) ? e($_POST['email']) : '' ?>" required autocomplete="email">
+                            <label for="email" class="small mb-1">Adresse Email</label>
+                            <input type="email" id="email" name="email" class="form-control" value="<?= isset($_POST['email']) ? e($_POST['email']) : '' ?>" required>
                         </div>
 
                         <div class="mb-4">
-                            <label for="password" class="small text-uppercase mb-1">Mot de passe</label>
-                            <input type="password" id="password" name="password" class="form-control" required autocomplete="current-password">
+                            <label for="password" class="small mb-1">Mot de passe</label>
+                            <input type="password" id="password" name="password" class="form-control" required>
                         </div>
 
-                        <button type="submit" class="btn btn-gold w-100 py-3 fw-bold text-uppercase" style="letter-spacing: 2px; background-color: #c9a961; color: #000; border: none;">
-                            Connexion
+                        <button type="submit" class="btn w-100 py-3 fw-bold text-uppercase" style="letter-spacing: 2px; background-color: #c9a961; color: #000; border: none;">
+                            Se Connecter
                         </button>
                     </form>
 

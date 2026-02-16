@@ -1,18 +1,28 @@
 <?php
 /**
  * Dashboard Administratif - Domaine Prestige
- * Point d'entrée du Back-office pour la gestion CRUD.
+ * Ce fichier sert de point d'entrée central pour la gestion du Back-office (CRUD).
  */
+
+// Importation des ressources nécessaires : connexion BDD et fonctions globales
 require_once '../config/db.php';
 require_once '../includes/functions.php';
 
-// Sécurité : Authentification réservée aux administrateurs
+/**
+ * SECURITÉ : Contrôle d'accès
+ * On vérifie si l'utilisateur est un administrateur via la session.
+ * Si ce n'est pas le cas, on le redirige immédiatement vers la page de connexion.
+ */
 if (!isAdmin()) {
     header('Location: ../login.php');
     exit;
 }
 
-// Statistiques pour le bonus Qualité du code
+/**
+ * RÉCUPÉRATION DES STATISTIQUES
+ * Ces requêtes permettent d'afficher dynamiquement le nombre d'articles
+ * et d'utilisateurs présents dans la base de données sur le tableau de bord.
+ */
 $count_items = $pdo->query("SELECT COUNT(*) FROM items")->fetchColumn();
 $count_users = $pdo->query("SELECT COUNT(*) FROM users")->fetchColumn();
 
@@ -21,9 +31,11 @@ require_once '../includes/header.php';
 ?>
 
 <style>
+    /* Définition des variables de couleurs pour maintenir une charte graphique cohérente */
     :root { --gold-prestige: #c9a961; --dark-deep: #050505; }
     body { background-color: var(--dark-deep); color: #ffffff; font-family: 'Lato', sans-serif; }
     
+    /* Style de l'en-tête avec image de fond et filtre sombre pour la lisibilité */
     .admin-header { 
         background: linear-gradient(rgba(0,0,0,0.85), rgba(0,0,0,0.85)), url('https://images.unsplash.com/photo-1510812431401-41d2bd2722f3?auto=format&fit=crop&w=1500&q=80'); 
         background-size: cover; 
@@ -32,6 +44,7 @@ require_once '../includes/header.php';
         border-bottom: 1px solid #333; 
     }
     
+    /* Style des "pilules" d'information en haut de page */
     .stat-pill { 
         background: rgba(201, 169, 97, 0.2); 
         border: 1px solid var(--gold-prestige); 
@@ -43,6 +56,7 @@ require_once '../includes/header.php';
         font-weight: 700;
     }
 
+    /* Style des cartes de menu du Back-office */
     .menu-card { 
         background: #0f0f0f; 
         border: 1px solid #333; 
@@ -53,8 +67,10 @@ require_once '../includes/header.php';
         flex-direction: column;
         justify-content: space-between;
     }
+    /* Effet de survol (hover) pour améliorer l'expérience utilisateur */
     .menu-card:hover { border-color: var(--gold-prestige); transform: translateY(-5px); }
 
+    /* Conteneur pour les icônes FontAwesome */
     .icon-box { 
         width: 80px; height: 80px; 
         background: #1a1a1a; 
@@ -68,6 +84,7 @@ require_once '../includes/header.php';
     .card-description { color: #ffffff !important; line-height: 1.6; min-height: 75px; }
     .stat-label { color: var(--gold-prestige) !important; font-weight: 700; text-transform: uppercase; font-size: 0.7rem; }
     
+    /* Boutons personnalisés "Or et Noir" */
     .btn-admin { 
         border: 2px solid var(--gold-prestige); 
         color: var(--gold-prestige); 
@@ -157,4 +174,7 @@ require_once '../includes/header.php';
     </div>
 </div>
 
-<?php require_once '../includes/footer.php'; ?>
+<?php 
+// Inclusion du pied de page
+require_once '../includes/footer.php'; 
+?>

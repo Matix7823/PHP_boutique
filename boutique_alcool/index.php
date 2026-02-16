@@ -1,14 +1,22 @@
 <?php
 /**
  * Page d'accueil - Domaine Prestige
- * Présente une vue d'ensemble, les nouveautés et le concept. 
+ * Ce fichier présente l'identité de la marque, une sélection de produits phares
+ * et le concept du vignoble.
  */
+
+// Importation de la configuration de la base de données et des outils PHP
 require_once 'config/db.php';
 require_once 'includes/functions.php';
 
 $page_title = 'Accueil';
 
-// Récupération des 4 dernières nouveautés avec jointure sur le stock
+/**
+ * RÉCUPÉRATION DES PRODUITS PHARES
+ * On utilise une jointure (LEFT JOIN) pour lier les bouteilles à leur stock.
+ * COALESCE assure de retourner 0 au lieu de NULL si aucune ligne de stock n'est trouvée.
+ * On trie par 'nouveaute' pour mettre en avant les derniers crus arrivés.
+ */
 $sql = "SELECT i.*, COALESCE(s.quantite_stock, 0) as stock 
         FROM items i 
         LEFT JOIN stock s ON i.id = s.id_item 
@@ -19,6 +27,7 @@ $sql = "SELECT i.*, COALESCE(s.quantite_stock, 0) as stock
 $stmt = $pdo->query($sql);
 $featured_wines = $stmt->fetchAll();
 
+// Inclusion de l'en-tête (navigation)
 require_once 'includes/header.php';
 ?>
 
@@ -51,7 +60,7 @@ require_once 'includes/header.php';
     <div class="container py-4">
         <div class="text-center mb-5">
             <h2 class="font-serif text-white display-5">Nos Cuvées d'Exception</h2>
-            <p style="color: #c9a961; text-uppercase; letter-spacing: 2px;">Sélection du Sommelier</p>
+            <p style="color: #c9a961; text-transform: uppercase; letter-spacing: 2px;">Sélection du Sommelier</p>
             <hr class="mx-auto mt-3" style="width: 60px; border-color: #c9a961; opacity: 1; border-width: 2px;">
         </div>
 
@@ -146,4 +155,7 @@ require_once 'includes/header.php';
     </div>
 </section>
 
-<?php require_once 'includes/footer.php'; ?>
+<?php 
+// Inclusion du pied de page
+require_once 'includes/footer.php'; 
+?>

@@ -1,27 +1,32 @@
 <?php
+/**
+ * Page Catalogue - Domaine Prestige
+ * Gère l'affichage des produits avec recherche, filtres et pagination.
+ */
 require_once 'config/db.php';
 require_once 'includes/functions.php';
 
 $page_title = 'Nos Vins';
 
-// 1. RÉCUPÉRATION ET NETTOYAGE DES FILTRES
+// 1. RÉCUPÉRATION ET NETTOYAGE DES FILTRES (via la méthode GET)
 $filter_type  = get('type', '');
 $filter_price = get('price', '');
 $search       = get('search', '');
-$page         = max(1, (int)get('page', 1));
-$per_page     = 12;
+$page         = max(1, (int)get('page', 1)); // Sécurité : la page ne peut pas être < 1
+$per_page     = 12; // Nombre de bouteilles par page
 
-// 2. CONSTRUCTION DE LA REQUÊTE DE BASE
+// 2. CONSTRUCTION DYNAMIQUE DE LA REQUÊTE SQL
+// On utilise une base commune pour le comptage et pour la sélection des données
 $sql_base = " FROM items i LEFT JOIN stock s ON i.id = s.id_item WHERE i.disponible = 1";
 $params = [];
 
-// Filtre par Type de vin
+// Filtre par couleur de vin (Rouge, Blanc, etc.)
 if ($filter_type) {
     $sql_base .= " AND i.type_vin = :type";
     $params[':type'] = $filter_type;
 }
 
-// Filtre par Tranche de Prix
+// Filtre par tranches de prix prédéfinies
 if ($filter_price) {
     switch ($filter_price) {
         case 'low':  $sql_base .= " AND i.prix < 30"; break;
@@ -30,7 +35,8 @@ if ($filter_price) {
     }
 }
 
-// RECHERCHE (Correction de l'erreur HY093 : paramètres uniques)
+// Logique de recherche textuelle (Nom, Description ou Appellation)
+// Protection contre les injections SQL via des paramètres nommés (:s1, :s2...)
 if ($search) {
     $sql_base .= " AND (i.nom LIKE :s1 OR i.description LIKE :s2 OR i.appellation LIKE :s3)";
     $params[':s1'] = "%$search%";
@@ -38,25 +44,29 @@ if ($search) {
     $params[':s3'] = "%$search%";
 }
 
-// 3. COMPTER LE TOTAL POUR LA PAGINATION
+// 3. CALCUL DE LA PAGINATION
+// On compte d'abord le nombre total de résultats sans les limites
 $count_stmt = $pdo->prepare("SELECT COUNT(*) " . $sql_base);
 $count_stmt->execute($params);
 $total_items = $count_stmt->fetchColumn();
 
-// Calcul des données de pagination via functions.php
+// Utilisation de la fonction paginate() définie dans functions.php
 $pagination = paginate($total_items, $per_page, $page);
 
-// 4. REQUÊTE FINALE AVEC TRI ET LIMITES
+// 4. RÉQUÊTE FINALE AVEC LIMITES (OFFSET)
+// On trie par nouveauté d'abord, puis par ID décroissant
 $sql = "SELECT i.*, COALESCE(s.quantite_stock, 0) as stock " . $sql_base . " 
         ORDER BY i.nouveaute DESC, i.id DESC 
         LIMIT :limit OFFSET :offset";
 
 $stmt = $pdo->prepare($sql);
 
+// Liaison des paramètres de filtrage
 foreach ($params as $key => $value) {
     $stmt->bindValue($key, $value);
 }
 
+// Liaison impérative en PARAM_INT pour MySQL (LIMIT/OFFSET n'acceptent pas de chaînes)
 $stmt->bindValue(':limit', (int)$pagination['per_page'], PDO::PARAM_INT);
 $stmt->bindValue(':offset', (int)$pagination['offset'], PDO::PARAM_INT);
 
@@ -164,7 +174,6 @@ require_once 'includes/header.php';
                     $params_get = $_GET;
                     unset($params_get['page']);
                     $query_string = http_build_query($params_get);
-                    // On nettoie la base URL pour displayPagination
                     $clean_url = 'articles.php' . ($query_string ? '?' . $query_string : '');
                     echo displayPagination($pagination, $clean_url); 
                 ?>

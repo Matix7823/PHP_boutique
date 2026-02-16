@@ -1,22 +1,30 @@
 <?php
 /**
  * Header - Domaine Prestige
- * Gère la navigation, l'état de session et l'affichage des alertes flash.
+ * Ce fichier gère la navigation, l'état de session, l'affichage des alertes flash
+ * et l'adaptation des chemins entre le front-office et le back-office.
  */
 
-// 1. Démarrer la session uniquement si elle n'est pas déjà active
+// 1. GESTION DE LA SESSION
+// On démarre la session uniquement si elle n'est pas déjà active pour éviter les erreurs PHP.
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
-// 2. Déterminer le préfixe de chemin (utile si on est dans /admin/)
+/** * 2. GESTION DES CHEMINS RELATIFS ($root)
+ * Ce bloc est crucial : il détecte si l'on se trouve dans le dossier /admin/.
+ * Si oui, il ajoute '../' devant les liens pour remonter à la racine du site.
+ * Cela permet d'utiliser le même header partout sans casser les liens CSS ou PHP.
+ */
 $root = (strpos($_SERVER['PHP_SELF'], '/admin/') !== false) ? '../' : '';
 
-// 3. Récupération des données globales
+// 3. RÉCUPÉRATION DES DONNÉES GLOBALES
+// On récupère l'utilisateur et le nombre d'articles dans le panier pour l'affichage dynamique.
 $current_user = isLogged() ? getCurrentUser() : null;
 $panier_count = getPanierCount();
 
-// 4. Gestion de la page active
+// 4. IDENTIFICATION DE LA PAGE ACTIVE
+// basename() récupère le nom du fichier actuel (ex: index.php) pour mettre le menu en gras.
 $current_page = basename($_SERVER['PHP_SELF']);
 ?>
 <!DOCTYPE html>
@@ -30,6 +38,7 @@ $current_page = basename($_SERVER['PHP_SELF']);
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;600;700&family=Lato:wght@300;400;700&display=swap" rel="stylesheet">
+    
     <link rel="stylesheet" href="<?= $root ?>assets/css/style.css">
 </head>
 <body class="bg-black text-white">
@@ -48,13 +57,13 @@ $current_page = basename($_SERVER['PHP_SELF']);
         <div class="collapse navbar-collapse" id="navbarNav">
             <ul class="navbar-nav ms-auto align-items-center">
                 <li class="nav-item">
-                    <a class="nav-link text-white <?= $current_page == 'index.php' ? 'fw-bold' : '' ?>" href="<?= $root ?>index.php">Accueil</a>
+                    <a class="nav-link text-white <?= $current_page == 'index.php' ? 'fw-bold border-bottom border-warning' : '' ?>" href="<?= $root ?>index.php">Accueil</a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link text-white <?= $current_page == 'articles.php' ? 'fw-bold' : '' ?>" href="<?= $root ?>articles.php">Nos Vins</a>
+                    <a class="nav-link text-white <?= $current_page == 'articles.php' ? 'fw-bold border-bottom border-warning' : '' ?>" href="<?= $root ?>articles.php">Nos Vins</a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link text-white <?= $current_page == 'qui-sommes-nous.php' ? 'fw-bold' : '' ?>" href="<?= $root ?>qui-sommes-nous.php">Le Domaine</a>
+                    <a class="nav-link text-white <?= $current_page == 'qui-sommes-nous.php' ? 'fw-bold border-bottom border-warning' : '' ?>" href="<?= $root ?>qui-sommes-nous.php">Le Domaine</a>
                 </li>
                 
                 <li class="nav-item ms-lg-3 my-2 my-lg-0">
@@ -74,6 +83,7 @@ $current_page = basename($_SERVER['PHP_SELF']);
                             <a class="nav-link fw-bold" href="<?= $root ?>admin/index.php" style="color: #c9a961;">ADMIN</a>
                         </li>
                     <?php endif; ?>
+                    
                     <li class="nav-item ms-lg-2">
                         <a class="nav-link text-white" href="<?= $root ?>logout.php" title="Déconnexion">
                             <i class="fas fa-power-off"></i>
